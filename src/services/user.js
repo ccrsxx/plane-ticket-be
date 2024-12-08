@@ -4,7 +4,7 @@ import { AuthService } from './auth.js';
 import { OtpService } from './otp.js';
 
 /** @import {Prisma} from '@prisma/client' */
-/** @import {ValidUserPayload} from '../middlewares/validation/user.js' */
+/** @import {ValidUserPayload, ValidUserUpdatePayload} from '../middlewares/validation/user.js' */
 
 /** @param {string} id */
 async function getUser(id) {
@@ -89,8 +89,40 @@ export async function createUser(payload) {
   return user;
 }
 
+/**
+ * @param {string} id
+ * @param {ValidUserUpdatePayload} payload
+ */
+async function updateUser(id, payload) {
+  const { name, email, image, phoneNumber } = payload;
+
+  const checkEmail = await prisma.user.findUnique({
+    where: { email }
+  });
+
+  if (checkEmail && checkEmail.id !== id) {
+    throw new HttpError(409, { message: 'Email already exists' });
+  }
+
+  const checkPhoneNumber = await prisma.user.findUnique({
+    where: { phoneNumber }
+  });
+
+  if (checkPhoneNumber && checkPhoneNumber.id !== id) {
+    throw new HttpError(409, { message: 'Phone number already exists' });
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: { id },
+    data: { name, email, image, phoneNumber }
+  });
+
+  return updatedUser;
+}
+
 export const UserService = {
   getUser,
   getUsers,
-  createUser
+  createUser,
+  updateUser
 };
