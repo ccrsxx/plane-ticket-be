@@ -123,6 +123,23 @@ async function createTransaction(
           }
         }
       },
+      include: {
+        departureFlight: {
+          include: {
+            departureAirport: {
+              select: {
+                code: true
+              }
+            },
+            destinationAirport: {
+              select: {
+                code: true
+              }
+            }
+          }
+        },
+        returnFlight: {}
+      },
       omit: {
         paymentId: false
       }
@@ -165,6 +182,16 @@ async function createTransaction(
       },
       data: {
         status: 'HELD'
+      }
+    });
+
+    await tx.notification.create({
+      data: {
+        userId: user.id,
+        name: 'Notifikasi',
+        description:
+          `Booking berhasil untuk tiket dengan kode ${transactionCreation.code}. Dengan keberangkatan dari ${transactionCreation.departureFlight.departureAirport.code} menuju ${transactionCreation.departureFlight.destinationAirport.code}` +
+          (transactionCreation.returnFlight ? ' (PP).' : '.')
       }
     });
 

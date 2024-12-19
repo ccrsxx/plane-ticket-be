@@ -42,7 +42,25 @@ export async function manageMidtransNotification(payload) {
           returnFlightSeatId: false,
           departureFlightSeatId: false
         }
-      }
+      },
+      departureFlight: {
+        include: {
+          departureAirport: {
+            select: {
+              code: true
+            }
+          },
+          destinationAirport: {
+            select: {
+              code: true
+            }
+          }
+        }
+      },
+      returnFlight: {}
+    },
+    omit: {
+      userId: false
     }
   });
 
@@ -129,9 +147,20 @@ export async function manageMidtransNotification(payload) {
       }
     });
 
+    const addNotificationAction = prisma.notification.create({
+      data: {
+        userId: transaction.userId,
+        name: 'Notifikasi',
+        description:
+          `Pembayaran berhasil untuk tiket dengan kode ${transaction.code}. Dengan keberangkatan dari ${transaction.departureFlight.departureAirport.code} menuju ${transaction.departureFlight.destinationAirport.code}` +
+          (transaction.returnFlight ? ' (PP).' : '.')
+      }
+    });
+
     await prisma.$transaction([
       updateTransactionAction,
-      updateFlightSeatsAction
+      updateFlightSeatsAction,
+      addNotificationAction
     ]);
 
     logger.info(`Transaction ${orderId} succeeded`);
@@ -163,9 +192,20 @@ export async function manageMidtransNotification(payload) {
       }
     });
 
+    const addNotificationAction = prisma.notification.create({
+      data: {
+        userId: transaction.userId,
+        name: 'Notifikasi',
+        description:
+          `Pembayaran gagal untuk tiket dengan kode ${transaction.code}. Dengan keberangkatan dari ${transaction.departureFlight.departureAirport.code} menuju ${transaction.departureFlight.destinationAirport.code}` +
+          (transaction.returnFlight ? ' (PP).' : '.')
+      }
+    });
+
     await prisma.$transaction([
       updateTransactionAction,
-      updateFlightSeatsAction
+      updateFlightSeatsAction,
+      addNotificationAction
     ]);
 
     logger.info(`Transaction ${orderId} failed`);
